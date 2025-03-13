@@ -61,7 +61,7 @@ const Index = () => {
               <Button
                 onClick={() => {
                   // Use a default team if the user wants to skip team building
-                  setTeam(["BONK", "WIF", "BODEN", "BOOK", "POPCAT", "SLERF"]);
+                  setTeam(["BONK"]);
                   setMode('battle');
                 }}
                 className="glass-card shadow-lg bg-black/40 border-degen-purple/20 hover:bg-black/50 hover:border-degen-purple/40 h-24 gap-3 group transition-all duration-300 btn-glow"
@@ -87,9 +87,9 @@ const Index = () => {
               
               <div className="glass p-6 rounded-xl slide-up stagger-2">
                 <Gamepad className="h-10 w-10 mx-auto mb-4 text-degen-pink" />
-                <h3 className="text-lg font-medium mb-2">Double Battles</h3>
+                <h3 className="text-lg font-medium mb-2">Single Battles</h3>
                 <p className="text-sm text-white/70">
-                  Battle with two SOLOMONs at once for more strategy
+                  Classic 1v1 SOLOMON battles with strategic gameplay
                 </p>
               </div>
               
