@@ -1,16 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Zap, Shield, Sword, RotateCcw, Play, Share2, BookOpen } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 interface Pokemon {
   name: string;
   hp: number;
   maxHp: number;
   moves: string[];
+  sprite?: string;
+  position?: { x: number; y: number };
+  isAttacking?: boolean;
+  isHit?: boolean;
 }
 
 interface BattleSimulatorProps {
@@ -36,7 +41,11 @@ const createPokemon = (name: string): Pokemon => {
     name,
     hp: 100,
     maxHp: 100,
-    moves: getRandomMoves()
+    moves: getRandomMoves(),
+    sprite: `https://img.pokemondb.net/sprites/black-white/anim/normal/${name.toLowerCase()}.gif`,
+    position: { x: 0, y: 0 },
+    isAttacking: false,
+    isHit: false
   };
 };
 
@@ -49,6 +58,9 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
   const [opponentTeam, setOpponentTeam] = useState<Pokemon[]>([]);
   const [turn, setTurn] = useState<"player" | "opponent">("player");
   const [isAnimating, setIsAnimating] = useState(false);
+  const [battleEffect, setBattleEffect] = useState<string | null>(null);
+  const [battleMessage, setBattleMessage] = useState<string | null>(null);
+  const battleLogRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Initialize teams and first Pokémon
@@ -71,7 +83,18 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
     setOpponentPokemon(newOpponentTeam[0]);
     
     setBattleLog([`Battle started! ${newPlayerTeam[0].name} vs ${newOpponentTeam[0].name}`]);
+    
+    // Intro animation
+    setBattleMessage("Battle Start!");
+    setTimeout(() => setBattleMessage(null), 1500);
   }, [team]);
+
+  // Scroll to bottom of battle log when new messages are added
+  useEffect(() => {
+    if (battleLogRef.current) {
+      battleLogRef.current.scrollTop = battleLogRef.current.scrollHeight;
+    }
+  }, [battleLog]);
 
   const performMove = (moveName: string) => {
     if (isBattleOver || isAnimating || !playerPokemon || !opponentPokemon) return;
@@ -80,49 +103,87 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
     
     // Player's turn
     if (turn === "player") {
-      const damage = Math.floor(Math.random() * 30) + 10;
-      const newOpponentHp = Math.max(0, opponentPokemon.hp - damage);
+      // Show attack message
+      setBattleMessage(`${playerPokemon.name} used ${moveName}!`);
+      
+      // Determine effect based on move name
+      const moveEffect = getMoveEffect(moveName);
+      setBattleEffect(moveEffect);
+      
+      // Set attacking animation
+      setPlayerPokemon(prev => prev ? { ...prev, isAttacking: true } : null);
       
       setTimeout(() => {
+        // Reset attack animation
+        setPlayerPokemon(prev => prev ? { ...prev, isAttacking: false } : null);
+        
+        // Set opponent as hit
+        setOpponentPokemon(prev => prev ? { ...prev, isHit: true } : null);
+        
+        // Calculate damage
+        const damage = Math.floor(Math.random() * 30) + 10;
+        
+        // Update battle log
         setBattleLog(prev => [...prev, `${playerPokemon.name} used ${moveName}! Dealt ${damage} damage.`]);
         
-        setOpponentPokemon({
-          ...opponentPokemon,
-          hp: newOpponentHp
-        });
-        
-        // Check if opponent fainted
-        if (newOpponentHp === 0) {
-          const remainingOpponents = opponentTeam.filter(p => p.name !== opponentPokemon.name && p.hp > 0);
+        // Clear effect and message
+        setTimeout(() => {
+          setBattleEffect(null);
+          setBattleMessage(null);
           
-          if (remainingOpponents.length > 0) {
-            // Send in next opponent Pokémon
-            const nextOpponent = remainingOpponents[0];
-            setTimeout(() => {
-              setBattleLog(prev => [...prev, `${opponentPokemon.name} fainted! Opponent sent in ${nextOpponent.name}!`]);
-              setOpponentPokemon(nextOpponent);
-              setIsAnimating(false);
-            }, 1000);
+          // Reset hit animation
+          setOpponentPokemon(prev => {
+            if (!prev) return null;
+            
+            const newOpponentHp = Math.max(0, prev.hp - damage);
+            return { ...prev, isHit: false, hp: newOpponentHp };
+          });
+          
+          // Check if opponent fainted
+          if (opponentPokemon.hp - damage <= 0) {
+            const remainingOpponents = opponentTeam.filter(p => p.name !== opponentPokemon.name && p.hp > 0);
+            
+            setBattleMessage(`${opponentPokemon.name} fainted!`);
+            
+            if (remainingOpponents.length > 0) {
+              // Send in next opponent Pokémon
+              const nextOpponent = remainingOpponents[0];
+              setTimeout(() => {
+                setBattleLog(prev => [...prev, `${opponentPokemon.name} fainted! Opponent sent in ${nextOpponent.name}!`]);
+                setBattleMessage(`Go ${nextOpponent.name}!`);
+                setOpponentPokemon(nextOpponent);
+                
+                setTimeout(() => {
+                  setBattleMessage(null);
+                  setIsAnimating(false);
+                }, 1500);
+              }, 1500);
+            } else {
+              // Victory
+              setTimeout(() => {
+                setBattleLog(prev => [...prev, `${opponentPokemon.name} fainted! You win the battle!`]);
+                setBattleMessage("You Won!");
+                setIsBattleOver(true);
+                
+                setTimeout(() => {
+                  setBattleMessage(null);
+                  setIsAnimating(false);
+                  toast({
+                    title: "Victory!",
+                    description: "You won the battle! Congrats, degen!",
+                  });
+                }, 2000);
+              }, 1500);
+            }
           } else {
-            // Victory
+            // Opponent's turn
+            setTurn("opponent");
             setTimeout(() => {
-              setBattleLog(prev => [...prev, `${opponentPokemon.name} fainted! You win the battle!`]);
-              setIsBattleOver(true);
-              setIsAnimating(false);
-              toast({
-                title: "Victory!",
-                description: "You won the battle! Congrats, degen!",
-              });
+              opponentTurn();
             }, 1000);
           }
-        } else {
-          // Opponent's turn
-          setTurn("opponent");
-          setTimeout(() => {
-            opponentTurn();
-          }, 1000);
-        }
-      }, 500);
+        }, 1000);
+      }, 1000);
     }
   };
 
@@ -130,46 +191,107 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
     if (!playerPokemon || !opponentPokemon) return;
     
     const opponentMove = opponentPokemon.moves[Math.floor(Math.random() * opponentPokemon.moves.length)];
-    const damage = Math.floor(Math.random() * 25) + 5;
-    const newPlayerHp = Math.max(0, playerPokemon.hp - damage);
     
-    setBattleLog(prev => [...prev, `${opponentPokemon.name} used ${opponentMove}! Dealt ${damage} damage.`]);
+    // Show attack message
+    setBattleMessage(`${opponentPokemon.name} used ${opponentMove}!`);
     
-    setPlayerPokemon({
-      ...playerPokemon,
-      hp: newPlayerHp
-    });
+    // Determine effect based on move name
+    const moveEffect = getMoveEffect(opponentMove);
+    setBattleEffect(moveEffect);
     
-    // Check if player's Pokémon fainted
-    if (newPlayerHp === 0) {
-      const remainingPokemon = playerTeam.filter(p => p.name !== playerPokemon.name && p.hp > 0);
+    // Set attacking animation
+    setOpponentPokemon(prev => prev ? { ...prev, isAttacking: true } : null);
+    
+    setTimeout(() => {
+      // Reset attack animation
+      setOpponentPokemon(prev => prev ? { ...prev, isAttacking: false } : null);
       
-      if (remainingPokemon.length > 0) {
-        // Prompt to choose next Pokémon
-        setTimeout(() => {
-          setBattleLog(prev => [...prev, `${playerPokemon.name} fainted! Choose your next Pokémon!`]);
-          setPlayerPokemon(remainingPokemon[0]);
+      // Set player as hit
+      setPlayerPokemon(prev => prev ? { ...prev, isHit: true } : null);
+      
+      // Calculate damage
+      const damage = Math.floor(Math.random() * 25) + 5;
+      
+      // Update battle log
+      setBattleLog(prev => [...prev, `${opponentPokemon.name} used ${opponentMove}! Dealt ${damage} damage.`]);
+      
+      // Clear effect and message
+      setTimeout(() => {
+        setBattleEffect(null);
+        setBattleMessage(null);
+        
+        // Reset hit animation and update HP
+        setPlayerPokemon(prev => {
+          if (!prev) return null;
+          
+          const newPlayerHp = Math.max(0, prev.hp - damage);
+          return { ...prev, isHit: false, hp: newPlayerHp };
+        });
+        
+        // Check if player's Pokémon fainted
+        if (playerPokemon.hp - damage <= 0) {
+          const remainingPokemon = playerTeam.filter(p => p.name !== playerPokemon.name && p.hp > 0);
+          
+          setBattleMessage(`${playerPokemon.name} fainted!`);
+          
+          if (remainingPokemon.length > 0) {
+            // Send in next Pokémon
+            setTimeout(() => {
+              setBattleLog(prev => [...prev, `${playerPokemon.name} fainted! Choose your next Pokémon!`]);
+              setBattleMessage(`Go ${remainingPokemon[0].name}!`);
+              setPlayerPokemon(remainingPokemon[0]);
+              
+              setTimeout(() => {
+                setBattleMessage(null);
+                setTurn("player");
+                setIsAnimating(false);
+              }, 1500);
+            }, 1500);
+          } else {
+            // Defeat
+            setTimeout(() => {
+              setBattleLog(prev => [...prev, `${playerPokemon.name} fainted! You lost the battle!`]);
+              setBattleMessage("You Lost!");
+              setIsBattleOver(true);
+              
+              setTimeout(() => {
+                setBattleMessage(null);
+                setIsAnimating(false);
+                toast({
+                  title: "Defeat",
+                  description: "You lost the battle. Try again!",
+                  variant: "destructive",
+                });
+              }, 2000);
+            }, 1500);
+          }
+        } else {
+          // Back to player's turn
           setTurn("player");
           setIsAnimating(false);
-        }, 1000);
-      } else {
-        // Defeat
-        setTimeout(() => {
-          setBattleLog(prev => [...prev, `${playerPokemon.name} fainted! You lost the battle!`]);
-          setIsBattleOver(true);
-          setIsAnimating(false);
-          toast({
-            title: "Defeat",
-            description: "You lost the battle. Try again!",
-            variant: "destructive",
-          });
-        }, 1000);
-      }
-    } else {
-      // Back to player's turn
-      setTurn("player");
-      setIsAnimating(false);
-    }
+        }
+      }, 1000);
+    }, 1000);
+  };
+
+  const getMoveEffect = (moveName: string): string => {
+    // Map move names to effect styles
+    const moveEffects: Record<string, string> = {
+      "Thunderbolt": "lightning",
+      "Flamethrower": "fire",
+      "Hydro Pump": "water",
+      "Solar Beam": "grass",
+      "Psychic": "psychic",
+      "Earthquake": "ground",
+      "Ice Beam": "ice",
+      "Blizzard": "ice",
+      "Fire Blast": "fire",
+      "Tackle": "normal",
+      "Quick Attack": "normal",
+      "Hyper Beam": "normal"
+    };
+    
+    return moveEffects[moveName] || "normal";
   };
 
   const resetBattle = () => {
@@ -185,6 +307,81 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
       <div className="flex items-center gap-2 mb-6">
         <Sword className="h-5 w-5 text-solana" />
         <h2 className="text-xl font-bold text-gradient">Gen1 Battle Simulator</h2>
+      </div>
+      
+      {/* Battle Arena */}
+      <div className="relative bg-gradient-to-b from-black/60 to-degen-gray/60 rounded-xl mb-6 h-64 overflow-hidden">
+        {/* Battle message overlay */}
+        {battleMessage && (
+          <div className="absolute inset-0 flex items-center justify-center z-20">
+            <div className="bg-black/70 text-white px-6 py-3 rounded-lg text-2xl font-bold animate-bounce">
+              {battleMessage}
+            </div>
+          </div>
+        )}
+        
+        {/* Battle effect overlay */}
+        {battleEffect && (
+          <div className={`absolute inset-0 z-10 opacity-40 ${
+            battleEffect === "fire" ? "bg-gradient-to-r from-orange-600 to-red-600 animate-pulse" :
+            battleEffect === "water" ? "bg-gradient-to-r from-blue-500 to-cyan-500 animate-pulse" :
+            battleEffect === "grass" ? "bg-gradient-to-r from-green-500 to-emerald-500 animate-pulse" :
+            battleEffect === "lightning" ? "bg-yellow-400 animate-flash" :
+            battleEffect === "psychic" ? "bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse" :
+            battleEffect === "ground" ? "bg-gradient-to-r from-amber-700 to-yellow-800 animate-shake" :
+            battleEffect === "ice" ? "bg-gradient-to-r from-cyan-300 to-blue-300 animate-pulse" :
+            "bg-white animate-flash opacity-20"
+          }`} />
+        )}
+        
+        {/* Player Pokémon */}
+        {playerPokemon && (
+          <div className={`absolute bottom-4 left-4 z-10 transition-all duration-300 ${
+            playerPokemon.isAttacking ? 'translate-x-6 translate-y-2 scale-110' : 
+            playerPokemon.isHit ? 'translate-x-[-4px] translate-y-[-4px] animate-shake' : ''
+          }`}>
+            <div className="relative">
+              <img 
+                src={playerPokemon.sprite || `https://img.pokemondb.net/sprites/black-white/anim/back-normal/${playerPokemon.name.toLowerCase()}.gif`} 
+                alt={playerPokemon.name}
+                className="h-24 pixelated"
+                style={{ transform: "scale(2)", imageRendering: "pixelated" }}
+              />
+              {playerPokemon.isHit && (
+                <div className="absolute inset-0 bg-red-500 opacity-50 animate-flash rounded-full"></div>
+              )}
+            </div>
+            <div className="bg-black/70 p-1 px-2 rounded text-xs absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+              {playerPokemon.name}
+            </div>
+          </div>
+        )}
+        
+        {/* Opponent Pokémon */}
+        {opponentPokemon && (
+          <div className={`absolute top-4 right-4 z-10 transition-all duration-300 ${
+            opponentPokemon.isAttacking ? '-translate-x-6 -translate-y-2 scale-110' : 
+            opponentPokemon.isHit ? 'translate-x-[4px] translate-y-[4px] animate-shake' : ''
+          }`}>
+            <div className="relative">
+              <img 
+                src={opponentPokemon.sprite || `https://img.pokemondb.net/sprites/black-white/anim/normal/${opponentPokemon.name.toLowerCase()}.gif`} 
+                alt={opponentPokemon.name}
+                className="h-24 pixelated"
+                style={{ transform: "scale(2)", imageRendering: "pixelated" }}
+              />
+              {opponentPokemon.isHit && (
+                <div className="absolute inset-0 bg-red-500 opacity-50 animate-flash rounded-full"></div>
+              )}
+            </div>
+            <div className="bg-black/70 p-1 px-2 rounded text-xs absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+              {opponentPokemon.name}
+            </div>
+          </div>
+        )}
+        
+        {/* Battle platform background */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-degen-gray-dark to-degen-gray rounded-b-xl"></div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -204,8 +401,9 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
                 </div>
                 <Progress 
                   value={(playerPokemon.hp / playerPokemon.maxHp) * 100} 
-                  className="h-2 bg-white/10" 
-                  indicatorClassName="bg-gradient-to-r from-degen-green to-solana" 
+                  className={cn("h-2 bg-white/10", {
+                    "animate-pulse": playerPokemon.isHit
+                  })}
                 />
               </div>
               
@@ -217,10 +415,26 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
                       key={move}
                       onClick={() => performMove(move)}
                       disabled={turn !== "player" || isBattleOver || isAnimating}
-                      className="bg-degen-gray-light hover:bg-degen-purple/30 border border-white/5 text-sm"
+                      className={`bg-degen-gray-light hover:bg-degen-purple/30 border border-white/5 text-sm ${
+                        getMoveEffect(move) === "fire" ? "hover:text-red-400" :
+                        getMoveEffect(move) === "water" ? "hover:text-blue-400" :
+                        getMoveEffect(move) === "grass" ? "hover:text-green-400" :
+                        getMoveEffect(move) === "lightning" ? "hover:text-yellow-400" :
+                        getMoveEffect(move) === "psychic" ? "hover:text-purple-400" :
+                        getMoveEffect(move) === "ice" ? "hover:text-cyan-400" :
+                        "hover:text-white"
+                      }`}
                       size="sm"
                     >
-                      <Zap className="h-3 w-3 mr-1 text-degen-yellow" />
+                      <Zap className={`h-3 w-3 mr-1 ${
+                        getMoveEffect(move) === "fire" ? "text-red-400" :
+                        getMoveEffect(move) === "water" ? "text-blue-400" :
+                        getMoveEffect(move) === "grass" ? "text-green-400" :
+                        getMoveEffect(move) === "lightning" ? "text-yellow-400" :
+                        getMoveEffect(move) === "psychic" ? "text-purple-400" :
+                        getMoveEffect(move) === "ice" ? "text-cyan-400" :
+                        "text-degen-yellow"
+                      }`} />
                       {move}
                     </Button>
                   ))}
@@ -237,11 +451,13 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
             <h3 className="text-sm font-medium text-white/70">Battle Log</h3>
           </div>
           
-          <div className="h-48 overflow-y-auto scrollbar-none space-y-2 text-sm">
+          <div ref={battleLogRef} className="h-48 overflow-y-auto scrollbar-none space-y-2 text-sm">
             {battleLog.map((log, index) => (
               <div 
                 key={index} 
-                className={`p-2 rounded-md ${index % 2 === 0 ? 'bg-degen-gray' : 'bg-black/20'}`}
+                className={`p-2 rounded-md ${index % 2 === 0 ? 'bg-degen-gray' : 'bg-black/20'} ${
+                  index === battleLog.length - 1 ? 'animate-fade-in' : ''
+                }`}
               >
                 {log}
               </div>
@@ -290,8 +506,9 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
                 </div>
                 <Progress 
                   value={(opponentPokemon.hp / opponentPokemon.maxHp) * 100} 
-                  className="h-2 bg-white/10" 
-                  indicatorClassName="bg-gradient-to-r from-degen-red to-degen-pink" 
+                  className={cn("h-2 bg-white/10", {
+                    "animate-pulse": opponentPokemon.isHit
+                  })}
                 />
               </div>
               
