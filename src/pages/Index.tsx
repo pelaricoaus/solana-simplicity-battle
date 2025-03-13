@@ -53,7 +53,7 @@ const Index = () => {
               >
                 <Gamepad className="h-8 w-8 text-solana group-hover:scale-110 transition-transform duration-300" />
                 <div className="flex flex-col items-start">
-                  <span className="text-lg font-bold">Make a Team</span>
+                  <span className="text-lg font-bold text-white">Make a Team</span>
                   <span className="text-sm text-white/70">Build your dream lineup</span>
                 </div>
               </Button>
@@ -61,14 +61,14 @@ const Index = () => {
               <Button
                 onClick={() => {
                   // Use a default team if the user wants to skip team building
-                  setTeam(["Pikachu", "Charizard", "Blastoise", "Venusaur", "Mewtwo", "Dragonite"]);
+                  setTeam(["BONK", "WIF", "BODEN", "BOOK", "POPCAT", "SLERF"]);
                   setMode('battle');
                 }}
                 className="glass-card shadow-lg bg-black/40 border-degen-purple/20 hover:bg-black/50 hover:border-degen-purple/40 h-24 gap-3 group transition-all duration-300 btn-glow"
               >
                 <Sword className="h-8 w-8 text-degen-purple group-hover:scale-110 transition-transform duration-300" />
                 <div className="flex flex-col items-start">
-                  <span className="text-lg font-bold">Quick Battle</span>
+                  <span className="text-lg font-bold text-white">Quick Battle</span>
                   <span className="text-sm text-white/70">Use default team</span>
                 </div>
               </Button>
@@ -89,7 +89,7 @@ const Index = () => {
                 <Gamepad className="h-10 w-10 mx-auto mb-4 text-degen-pink" />
                 <h3 className="text-lg font-medium mb-2">Double Battles</h3>
                 <p className="text-sm text-white/70">
-                  Battle with two Pokémon at once for more strategy
+                  Battle with two SOLOMONs at once for more strategy
                 </p>
               </div>
               

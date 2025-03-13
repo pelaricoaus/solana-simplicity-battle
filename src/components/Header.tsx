@@ -10,7 +10,7 @@ const Header = () => {
           <img 
             src="/lovable-uploads/4e6c8227-9be0-4f43-8234-b5ba531b9ccf.png" 
             alt="SOLOMON" 
-            className="h-10 animate-float" 
+            className="h-10" 
           />
         </div>
         
