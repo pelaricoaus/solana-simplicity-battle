@@ -32,11 +32,12 @@ const Index = () => {
           <div className="max-w-4xl w-full mx-auto text-center space-y-10 fade-in">
             <div className="space-y-4">
               <div className="inline-block animate-float">
-                <Diamond className="h-16 w-16 text-solana mx-auto animate-pulse" />
+                <img 
+                  src="/lovable-uploads/4e6c8227-9be0-4f43-8234-b5ba531b9ccf.png" 
+                  alt="SOLOMON" 
+                  className="h-28 mx-auto"
+                />
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient">
-                Solana Simplicity Battle
-              </h1>
               <p className="text-lg text-white/70 max-w-2xl mx-auto">
                 A minimal battle simulator for the Solana degen community.
                 Build your team and start battling in just a few clicks.
@@ -86,17 +87,17 @@ const Index = () => {
               
               <div className="glass p-6 rounded-xl slide-up stagger-2">
                 <Gamepad className="h-10 w-10 mx-auto mb-4 text-degen-pink" />
-                <h3 className="text-lg font-medium mb-2">Team Building</h3>
+                <h3 className="text-lg font-medium mb-2">Double Battles</h3>
                 <p className="text-sm text-white/70">
-                  Create your perfect team with classic Gen1 Pokémon
+                  Battle with two Pokémon at once for more strategy
                 </p>
               </div>
               
               <div className="glass p-6 rounded-xl slide-up stagger-3">
                 <Sword className="h-10 w-10 mx-auto mb-4 text-degen-blue" />
-                <h3 className="text-lg font-medium mb-2">Gen1 Battles</h3>
+                <h3 className="text-lg font-medium mb-2">Trading Charts</h3>
                 <p className="text-sm text-white/70">
-                  Fight against opponents with classic battle mechanics
+                  Battle with crypto price charts in the background
                 </p>
               </div>
             </div>
