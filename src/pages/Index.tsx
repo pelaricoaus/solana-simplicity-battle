@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Gamepad, Sword, Diamond } from 'lucide-react';
+import { Gamepad, Sword, Diamond, BookOpen } from 'lucide-react';
 import TeamBuilder from '@/components/TeamBuilder';
 import BattleSimulator from '@/components/BattleSimulator';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const [team, setTeam] = useState<string[]>([]);
@@ -31,11 +32,12 @@ const Index = () => {
         {mode === 'home' && (
           <div className="max-w-4xl w-full mx-auto text-center space-y-10 fade-in">
             <div className="space-y-4">
-              <div className="inline-block animate-float">
+              <div className="inline-block">
+                {/* Fixed logo, not animating */}
                 <img 
                   src="/lovable-uploads/4e6c8227-9be0-4f43-8234-b5ba531b9ccf.png" 
                   alt="SOLOMON" 
-                  className="h-28 mx-auto"
+                  className="h-28 mx-auto animate-float"
                 />
               </div>
               <p className="text-lg text-white/70 max-w-2xl mx-auto">
@@ -54,7 +56,7 @@ const Index = () => {
                 <Gamepad className="h-8 w-8 text-solana group-hover:scale-110 transition-transform duration-300" />
                 <div className="flex flex-col items-start">
                   <span className="text-lg font-bold text-white">Make a Team</span>
-                  <span className="text-sm text-white/70">Build your dream lineup</span>
+                  <span className="text-sm text-white">Build your dream lineup</span>
                 </div>
               </Button>
               
@@ -69,37 +71,25 @@ const Index = () => {
                 <Sword className="h-8 w-8 text-degen-purple group-hover:scale-110 transition-transform duration-300" />
                 <div className="flex flex-col items-start">
                   <span className="text-lg font-bold text-white">Quick Battle</span>
-                  <span className="text-sm text-white/70">Use default team</span>
+                  <span className="text-sm text-white">Use default team</span>
                 </div>
               </Button>
             </div>
             
             <div className="pt-10 divider"></div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-              <div className="glass p-6 rounded-xl slide-up stagger-1">
-                <Diamond className="h-10 w-10 mx-auto mb-4 text-degen-yellow" />
-                <h3 className="text-lg font-medium mb-2">Simple UI</h3>
-                <p className="text-sm text-white/70">
-                  Clean and minimal interface for an intuitive experience
-                </p>
-              </div>
-              
-              <div className="glass p-6 rounded-xl slide-up stagger-2">
-                <Gamepad className="h-10 w-10 mx-auto mb-4 text-degen-pink" />
-                <h3 className="text-lg font-medium mb-2">Single Battles</h3>
-                <p className="text-sm text-white/70">
-                  Classic 1v1 SOLOMON battles with strategic gameplay
-                </p>
-              </div>
-              
-              <div className="glass p-6 rounded-xl slide-up stagger-3">
-                <Sword className="h-10 w-10 mx-auto mb-4 text-degen-blue" />
-                <h3 className="text-lg font-medium mb-2">Trading Charts</h3>
-                <p className="text-sm text-white/70">
-                  Battle with crypto price charts in the background
-                </p>
-              </div>
+            <div className="glass p-6 rounded-xl slide-up stagger-2 max-w-2xl mx-auto">
+              <Link to="/solodex">
+                <Button
+                  className="w-full glass-card shadow-lg bg-black/40 border-degen-yellow/20 hover:bg-black/50 hover:border-degen-yellow/40 h-24 gap-3 group transition-all duration-300 btn-glow"
+                >
+                  <BookOpen className="h-8 w-8 text-degen-yellow group-hover:scale-110 transition-transform duration-300" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-lg font-bold text-white">SOLODEX</span>
+                    <span className="text-sm text-white">Complete SOLOMON database</span>
+                  </div>
+                </Button>
+              </Link>
             </div>
           </div>
         )}
