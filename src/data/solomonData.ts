@@ -1,4 +1,3 @@
-
 // Renamed Gen 1 Pokémon to Solana memecoins
 export const SOLOMON_NAMES: Record<string, string> = {
   "Venusaur": "BOOK", // Book of Memes
@@ -508,6 +507,25 @@ export const SOLOMON_SPRITE_MAPPING: Record<string, string> = {
   "DRAGONCOIN": "dragonair"
 };
 
+// Types for Solomon
+export interface SolomonType {
+  name: string;
+  color: string;
+  bgColor: string;
+  description: string;
+}
+
+// Types for Move Details
+export interface MoveDetails {
+  name: string;
+  type: string;
+  power: number;
+  accuracy: number;
+  category: "physical" | "special" | "status";
+  priority: number;
+  description: string;
+}
+
 // Determine move effect based on name
 export const getMoveEffect = (moveName: string): string => {
   // Map move themes to visual effects
@@ -544,6 +562,83 @@ export const getMoveEffect = (moveName: string): string => {
   }
 };
 
+// Get details about a move
+export const getMoveDetails = (moveName: string): MoveDetails => {
+  // Map move names to their properties
+  let power = 75;
+  let accuracy = 90;
+  let category: "physical" | "special" | "status" = "physical";
+  let priority = 0;
+  let type = "MEME";
+  let description = "A standard move with balanced power and accuracy.";
+  
+  // Determine type based on name patterns
+  if (moveName.includes("PUMP") || moveName.includes("MOON") || moveName.includes("FIRE") || 
+      moveName.includes("BURN") || moveName.includes("APY") || moveName.includes("BULLISH")) {
+    type = "PUMP";
+    power = 90;
+    description = "A powerful attack that pumps the price, dealing high damage.";
+  } 
+  else if (moveName.includes("LIQUID") || moveName.includes("POOL") || moveName.includes("WAVE") || 
+           moveName.includes("DUMP") || moveName.includes("WATER") || moveName.includes("FREEZE")) {
+    type = "LIQUID";
+    power = 80;
+    description = "A liquid-based move that flows through defenses, dealing moderate damage.";
+  }
+  else if (moveName.includes("VIRAL") || moveName.includes("TWEET") || moveName.includes("SHOCK") || 
+           moveName.includes("SPARK") || moveName.includes("BREAK") || moveName.includes("ELON")) {
+    type = "BUZZ";
+    power = 95;
+    accuracy = 80;
+    description = "A high-powered move with viral potential but less accuracy.";
+  }
+  else if (moveName.includes("FARM") || moveName.includes("STAKE") || moveName.includes("SEED") ||
+           moveName.includes("TOKEN") || moveName.includes("LAUNCH")) {
+    type = "STAKE";
+    power = 70;
+    category = "special";
+    description = "A special move that stakes tokens for sustainable damage.";
+  }
+  else if (moveName.includes("MIND") || moveName.includes("MANIPULATION") || moveName.includes("ALPHA") ||
+           moveName.includes("PREDICT") || moveName.includes("CONFUSION")) {
+    type = "PSYCHIC";
+    power = 90;
+    category = "special";
+    description = "A powerful market manipulation that confuses opponents.";
+  }
+  else if (moveName.includes("CRASH") || moveName.includes("FOUNDATION") || moveName.includes("SUPPORT") ||
+           moveName.includes("DIP") || moveName.includes("RESEARCH")) {
+    type = "BEAR";
+    power = 100;
+    accuracy = 75;
+    description = "A devastating bearish move that crashes through support levels.";
+  }
+  else if (moveName.includes("FROZEN") || moveName.includes("COLD") || moveName.includes("ASSETS") ||
+           moveName.includes("DEAD")) {
+    type = "COLD";
+    power = 65;
+    accuracy = 100;
+    description = "A reliable cold storage move that never misses.";
+  }
+  else if (moveName.includes("RECOVERY") || moveName.includes("STAKING") || moveName.includes("HODL")) {
+    type = "MEME";
+    power = 0;
+    category = "status";
+    description = "A status move that recovers HP through staking rewards.";
+    priority = 1;
+  }
+  
+  return {
+    name: moveName,
+    type,
+    power,
+    accuracy,
+    category,
+    priority,
+    description
+  };
+};
+
 // Create a default SOLOMON object
 export const createSolomon = (name: string) => {
   // Convert from original Pokémon name if needed
@@ -558,6 +653,9 @@ export const createSolomon = (name: string) => {
   
   // Get moves for this SOLOMON, or generate random ones if not defined
   const moves = SOLOMON_MOVES[solomonName] || getRandomMoves();
+  
+  // Determine type based on moves
+  const types = determineTypes(moves);
   
   return {
     name: solomonName,
@@ -574,8 +672,34 @@ export const createSolomon = (name: string) => {
       defense: stats.defense,
       speed: stats.speed,
       special: stats.special
-    }
+    },
+    type: types
   };
+};
+
+// Determine types based on moves
+const determineTypes = (moves: string[]): string[] => {
+  const types = new Set<string>();
+  
+  // Add at least one type based on first move
+  const firstMoveType = getMoveDetails(moves[0]).type;
+  types.add(firstMoveType);
+  
+  // Check other moves for additional types
+  moves.slice(1).forEach(move => {
+    const moveType = getMoveDetails(move).type;
+    // 40% chance to add a second type if it's different
+    if (!types.has(moveType) && types.size < 2 && Math.random() < 0.4) {
+      types.add(moveType);
+    }
+  });
+  
+  // If no types were determined, add MEME as default
+  if (types.size === 0) {
+    types.add("MEME");
+  }
+  
+  return Array.from(types);
 };
 
 // Get random moves for a SOLOMON that doesn't have predefined moves
@@ -585,8 +709,94 @@ export const getRandomMoves = () => {
   return shuffled.slice(0, 4);
 };
 
+// Get full list of SOLOMON names for Solodex
 export const getFullSolomonList = (): string[] => {
   return Object.values(SOLOMON_NAMES).filter((value, index, self) => {
     return self.indexOf(value) === index;
   });
+};
+
+// Get all Solomon entries for Solodex
+export const getAllSolomons = () => {
+  const solomonNames = getFullSolomonList();
+  return solomonNames.map(name => {
+    const solomon = createSolomon(name);
+    return {
+      ...solomon,
+      description: generateDescription(name)
+    };
+  });
+};
+
+// Generate a description for a SOLOMON
+const generateDescription = (name: string): string => {
+  const descriptions: Record<string, string> = {
+    "BOOK": "The original memecoin that started it all. Known for its steady growth and strong community support.",
+    "WIF": "A playful yet powerful Solana token that quickly gained viral popularity across the ecosystem.",
+    "BODEN": "A politically themed token with surprising resilience in market downturns.",
+    "BONK": "The people's memecoin of Solana, known for its fast transactions and loyal community.",
+    "SLERF": "A whimsical token that seems harmless but can unexpectedly dominate the market.",
+    "POPCAT": "A meme-based token inspired by viral internet culture with explosive potential.",
+    "GOATED": "One of the strongest performers in the Solana ecosystem, living up to its name.",
+    "SLOTH": "Slow but steady, this token accumulates value over time through patient HODLing.",
+    "SAMO": "The elder statesman of Solana memecoins, respected for its longevity and strength.",
+    "CAT": "A hefty token that absorbs market impacts and recovers through community staking.",
+    "SOLANA": "The mythical token that symbolizes the entire ecosystem, sought after by all traders."
+  };
+  
+  return descriptions[name] || "A mysterious SOLOMON from the Solana ecosystem with undiscovered potential.";
+};
+
+// Get all Solomon types
+export const getSolomonTypes = (): SolomonType[] => {
+  return [
+    {
+      name: "MEME",
+      color: "#AAAAAA",
+      bgColor: "#444444",
+      description: "The foundational type of the SOLOMON world, representing viral community-driven assets."
+    },
+    {
+      name: "PUMP",
+      color: "#FF6B6B",
+      bgColor: "#660000",
+      description: "Aggressive tokens known for explosive price action and high volatility."
+    },
+    {
+      name: "LIQUID",
+      color: "#5DABFF",
+      bgColor: "#003366",
+      description: "Tokens with high liquidity that flow easily between markets."
+    },
+    {
+      name: "BUZZ",
+      color: "#FFD166",
+      bgColor: "#664400",
+      description: "Social media darlings that gain value through viral marketing and influencer attention."
+    },
+    {
+      name: "STAKE",
+      color: "#06D6A0",
+      bgColor: "#004433",
+      description: "Tokens that generate passive income through staking mechanisms."
+    },
+    {
+      name: "PSYCHIC",
+      color: "#C77DFF",
+      bgColor: "#440066",
+      description: "Tokens that seem to predict market movements before they happen."
+    },
+    {
+      name: "BEAR",
+      color: "#7D4F00",
+      bgColor: "#331F00",
+      description: "Defensive tokens that perform well during market downturns."
+    },
+    {
+      name: "COLD",
+      color: "#90E0EF",
+      bgColor: "#005F73",
+      description: "Stable tokens often held in cold storage for long-term value preservation."
+    }
+  ];
 };

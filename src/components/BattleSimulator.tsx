@@ -209,6 +209,7 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
     
     // Determine who goes first based on speed and move priority
     const firstMover = determineFirstMover(playerSolomon, opponentSolomon, moveName);
+    setSelectedMove(moveName);
     
     if (firstMover === "player") {
       // Player goes first
@@ -273,7 +274,8 @@ const BattleSimulator = ({ team, onReset }: BattleSimulatorProps) => {
               handleOpponentPokemonFainted();
             } else {
               // No one fainted, switch to opponent's turn if player went first
-              if (firstMover === "player") {
+              const localFirstMover = determineFirstMover(playerSolomon, opponentSolomon, moveName);
+              if (localFirstMover === "player") {
                 executeOpponentMove().then(() => {
                   // Check if player's Pokemon fainted after opponent's move
                   if ((playerSolomon?.hp || 0) <= 0) {
